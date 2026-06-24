@@ -3,14 +3,17 @@ import pandas as pd
 import seaborn as sns
 
 file_path = './원본/한국언론진흥재단_뉴스빅데이터_메타데이터_노인_20011231.csv' 
-df = pd.read_csv(file_path, encoding='cp949')
+df = pd.read_csv(file_path, encoding='cp949')   # Table 모양으로 가져오기 위한 작업: Pandas
 
+# 행 단위로 데이터를 가져감 -> 전체 표가 수정 진행, 문자열로 가져옴(string)
+region_mask = df["통합 분류1"].notna() & df["통합 분류1"].str.contains("지역")   # notna(): 결측치가 아닌 데이터를 찾음 <-> dropna(): 결측치 행을 삭제
 
-region_mask = df["통합 분류1"].notna() & df["통합 분류1"].str.contains("지역")
+# '지역'기사만 추출해라
 df_region = df[region_mask].copy() 
 
+# '상세지역'칼럼 추가하기
 df_region['상세지역'] = df_region['통합 분류1'].apply(
-    lambda x: x.split('-')[-1].strip() if '-' in str(x) else x.strip()
+    lambda x: x.split('-')[-1].strip() if '-' in str(x) else x.strip()   # split('-')[-1].strip(): 마지막 부분을 가져옴 ex. 지역-강원-속초: 속초
 )
 # 1회용 함수 람다
 # lambda x: [조건이 참일 때 매수] if [조건식] else [조건이 거짓일 때 매수]
@@ -21,25 +24,24 @@ print(df_region['상세지역'].value_counts(),
 print("====================================================\n")
 
 
-df_region['키워드'] = df_region['키워드'].fillna('')
+df_region['키워드'] = df_region['키워드'].fillna('')  # 키워드 추가
 # 빈문자열이라도 삽입 
 
 
 from collections import Counter
 # 어떤 요소가 몇 개씩 들어있는지 계산하여 딕셔너리 형태로 반환
 
+# 키워드 컬럼에서 '키워드' 순위 10위 권 추출
 def get_top_10_keywords(series):
    
-    all_text = " ".join(series.astype(str))    
-    words = [word.strip() for word in all_text.replace(',', ' ').split() if word.strip()]
-    
-  
+    all_text = " ".join(series.astype(str))   # 결합 방지, 띄어쓰기를 하면서 대형문자로 만들어줌 
+    words = [word.strip() for word in all_text.replace(',', ' ').split() if word.strip()]   # ,가 있으면 공백으로 처리하고 하나씩 분리시켜줌 
     top_10 = [item[0] for item in Counter(words).most_common(10)]
     
     return top_10
 
 
-summary_df = df_region.groupby('상세지역').agg(
+summary_df = df_region.groupby('상세지역').agg(      # agg(): 상세지역별 통합 키워드 순위를 결합해서 나타내줌
     뉴스빈도수=('상세지역', 'count'),
     키워드순=('키워드', get_top_10_keywords)
 ).sort_values(by='뉴스빈도수', ascending=False)
@@ -71,13 +73,13 @@ base_stop_words = {'노인', '참석', '일동', '주민',
                    "이날" }
 all_region_names = list(df_region['상세지역'].dropna().unique())
 
-def get_clean_keywords(text):
-    if not text: return []
-    words = [word.strip() for word in str(text).replace(',', ' ').split() if word.strip()]
+def get_clean_keywords(text):   # 각 행마다 함수 구동 -> 문자열로 받아서 'text', 문자열을 받아서 배열을 돌려주다.
+    if not text: return []   # text 값이 없을 경우, return으로 함수 종료
+    words = [word.strip() for word in str(text).replace(',', ' ').split() if word.strip()]  # []: 리스트 형식, # 외부파일은 들어올 때, string
     
     clean_words = []
     for word in words:
-        if word in base_stop_words: continue
+        if word in base_stop_words: continue   # continue로 제거해주기
         if any(region in word for region in all_region_names): continue
         clean_words.append(word)
     return clean_words
@@ -85,11 +87,11 @@ def get_clean_keywords(text):
 # --------------------------------------------------
 # 3. 상세지역별 키워드 통합 및 상위 5개 추출 (키워드순 컬럼 생성)
 # --------------------------------------------------
-df_region['정제된_리스트'] = df_region['키워드'].apply(get_clean_keywords)
+df_region['정제된_리스트'] = df_region['키워드'].apply(get_clean_keywords)   # text = '키워드'
 
 def merge_and_rank(series):
     merged_list = [word for sublist in series for word in sublist]
-    return [item[0] for item in Counter(merged_list).most_common(10)]
+    return [item[0] for item in Counter(merged_list).most_common(10)]   # Counter: 내림차순으로 정리됨
 
 summary_df = df_region.groupby('상세지역').agg(
     키워드순=('정제된_리스트', merge_and_rank)
@@ -105,6 +107,3 @@ print("=== [콘솔 확인] 통합 분류1 카테고리 시리즈 ===")
 print(category_counts)
 print("데이터 타입:", type(category_counts))
 print("====================================================\n")
-
-
-
