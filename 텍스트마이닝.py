@@ -29,9 +29,9 @@ for target in base_stop_words:
         pos = word.find(target, start_index)
         
         
-        # 더 이상 단어가 발견되지 않으면 (-1) 반복을 멈춥니다.
+        # 더 이상 단어가 발견되지 않으면 -1를 리턴하고, 반복을 멈춥니다.
         if pos == -1:
-            break
+            break     # <-> continue: 건너뛰기, 다음 차례로 이동
             
         indices.append(pos)  # 발견된 위치 기록
         start_index = pos + 1  # ⭐ 중요: 다음 검색은 발견된 위치 '바로 다음 칸'부터 시작!
@@ -45,7 +45,7 @@ for target in base_stop_words:
 
 # --- 보기 좋게 출력 ---
 import json
-print(json.dumps(profiling_result, ensure_ascii=False, indent=2))
+print(json.dumps(profiling_result, ensure_ascii=False, indent=2))   # indent = 들여쓰기
 
 """
 

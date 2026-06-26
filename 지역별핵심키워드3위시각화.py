@@ -15,14 +15,14 @@ base_stop_words = {'노인', '참석', '일동', '주민',
                    "지역", "마을", "노인들", "노인분들", "주민들","주민일동",
                    "이날" }
 
-region_mask = df["통합 분류1"].notna() & df["통합 분류1"].str.contains("지역")
-df_region = df[region_mask].copy() 
+region_mask = df["통합 분류1"].notna() & df["통합 분류1"].str.contains("지역")   # '지역'관련 칼럼만 들어가있는 데이터 표!
+df_region = df[region_mask].copy()  # 나중을 대비한 copy!
 
 df_region['상세지역'] = df_region['통합 분류1'].apply(
-    lambda x: x.split('-')[-1].strip() if '-' in str(x) else x.strip()
-)
+    lambda x : x.split('-')[-1].strip() if '-' in str(x) else x.strip()
+)   # -> '상세지역'이라는 칼럼을 추가하기 위한 코드
 
-df_region['키워드'] = df_region['키워드'].fillna('')
+df_region['키워드'] = df_region['키워드'].fillna('')   # fillna(''): 결측치 발견 시, 빈 칸('')이라도 넣어주세요.
 # 빈문자열이라도 삽입
 all_region_names = list(df_region['상세지역'].dropna().unique())
 
