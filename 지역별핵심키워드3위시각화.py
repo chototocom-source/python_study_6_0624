@@ -15,32 +15,34 @@ base_stop_words = {'노인', '참석', '일동', '주민',
                    "지역", "마을", "노인들", "노인분들", "주민들","주민일동",
                    "이날" }
 
-region_mask = df["통합 분류1"].notna() & df["통합 분류1"].str.contains("지역")
+region_mask = df["통합 분류1"].notna() & df["통합 분류1"].str.contains("지역")  # 열로 가져오지 않음 -> 행으로 가져옴 -> '일자', '키워드'...도 따라옴
 
 #################### 지역기사만 추출한 데이터프레임 ##########################
 
 df_region = df[region_mask].copy() 
 
 df_region['상세지역'] = df_region['통합 분류1'].apply(
-    lambda x: x.split('-')[-1].strip() if '-' in str(x) else x.strip()
+    lambda x: x.split('-')[-1].strip() if '-' in str(x) else x.strip()  # df_region['상세지역']: dataframe, df_region['통합 분류1']: series
 )
+# 지역 기사만 추출하고, 상세지역 컬럼을 만들어 상세지역만 넣어둠 -> df_region['상세지역']: 데이터 프레임 형태!
+
 
 ######## 정보량 0인 키워드 추출 준비 & 지역이름 만 수집하기 ########
 # 판다스에서 데이터프레임의 특정 열을 수정할 때 가장 많이 쓰는 핵심 패턴
 # 서로 다른 메모리 주소를 가진 별개의 객체
 # 오른쪽은 시리즈이고 같은 이름이더라도 새로운 공간에 저장해서 가공
 # 왼쪽은 데이터프레임의 열을 가리키는 참조(Reference) 객체 
-df_region['키워드'] = df_region['키워드'].fillna('')
-# 빈문자열이라도 삽입
+df_region['키워드'] = df_region['키워드'].fillna('')  # 수정하기 위한 코드!
+# 빈문자열이라도 삽입(중복되지 않게!)
 all_region_names = list(df_region['상세지역'].dropna().unique())
 
 
 
 def get_top_10_keywords(series):   
     all_text = " ".join(series.astype(str))
-    #모두 빈칸을 두고 하나의 문자열로 결합 
+    # 모두 빈칸을 두고 하나의 문자열로 결합 
     # (그렇다면 그전에 데이터들이 문자가 아니면 합해지지 못하므로 astype(str)로 변환) 
-    #  결과물 예시 : "100, True, 사과"  
+    # 결과물 예시 : "100, True, 사과"  
     words = [word.strip() for word in all_text.replace(',', ' ').split() if word.strip()]
 
         # 1. all_text.replace(',', ' ') 
@@ -64,8 +66,8 @@ def get_top_10_keywords(series):
     return top_10 # 빈도수가 높은 키워드 순 5개만 내보내라
 
 def get_clean_keywords(text):
-    if not text: return [] # 문자열을 받았을때 비어있을 경우 빈리스트 반환 비어있는데 아래 작업을 진행할 이유가 없으니깐
-    words = [word.strip() for word in str(text).replace(',', ' ').split() if word.strip()]    
+    if not text: return [] # 문자열을 받았을때 비어있을 경우 빈 리스트 반환, 비어있는데 아래 작업을 진행할 이유가 없으니깐
+    words = [word.strip() for word in str(text).replace(',', ' ').split() if word.strip()]
     clean_words = []
     for word in words:
         #대조작업시작
@@ -80,7 +82,7 @@ def merge_and_rank(series):
     return [item[0] for item in Counter(merged_list).most_common(10)]
 
 
-df_region['정제된_리스트'] = df_region['키워드'].apply(get_clean_keywords)
+df_region['정제된_리스트'] = df_region['키워드'].apply(get_clean_keywords)   #  df_region['정제된_리스트']: 데이터 프레임 형태!
 # 키워드 한 행 마다 들어있던 노인, 무료, 시식, 참여, 지역... 이렇게 길게 되어있는 문자열을 5개로 줄여서 
 # 다시 원래 데이터프레임의 새로운 컬럼 정제된_리스트라는 컬럼에 넣어주기
 # apply(get_clean_keywords)로 각 행마다 함수를 적용
@@ -95,14 +97,14 @@ visual_df = df_region.groupby('상세지역').agg(
 # 상세지역별로 뉴스 건수와 키워드순 컬럼  집계한 데이터프레임을 생성하고, 뉴스 건수 기준으로 내림차순 정렬
 
 
-visual_df['상위3개키워드'] = visual_df['키워드순'].apply(lambda x: ', '.join(x[:3]))
+visual_df['상위3개키워드'] = visual_df['키워드순'].apply(lambda x: ', '.join(x[:3]))  # visual_df['상위3개키워드'] -> 문자열 형식
 # 상위3개키워드 컬럼 추가하고 키워드순 리스트로 값이 되어있는데 하나의 문자열로 쉽표가 포함된 3자리까지 합쳐서 넣어주기 (join)
 
 plt.figure(figsize=(14, 7))
 
 
 ax = sns.barplot(
-    data=visual_df.reset_index(), 
+    data=visual_df.reset_index(),   # reset_index(): 차례로 다시 정리해주세요 -> 높은 순서
     x='상세지역', 
     y='뉴스건수', 
     hue='상위3개키워드', 

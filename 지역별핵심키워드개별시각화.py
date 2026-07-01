@@ -52,7 +52,7 @@ def get_clean_keywords(text):
 
 df_region["정제된_리스트"] = df_region["키워드"].apply(get_clean_keywords)
 
-# 4. 데이터 쪼개기 및 빈도수 집계
+# 4. 데이터 쪼개기 및 빈도수 집계 -> explode
 df_exploded = df_region[["상세지역", "정제된_리스트"]].explode("정제된_리스트")
 df_exploded.columns = ["상세지역", "키워드"]
 df_exploded = df_exploded.dropna()
